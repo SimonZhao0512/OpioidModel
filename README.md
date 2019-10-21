@@ -1,35 +1,30 @@
 # OpioidModel
-Program for modeling the prescription opioid epidemic for given data: **APAM SEM 4903 Columbia University**
+Program for modeling the prescription opioid epidemic for given data:  **APAM SEM 4903 Columbia University**
 
 Opioid Model Documentation:
 by Simon,Roland and Noah
 10.16.19
 
 ### 1. **HOW TO USE:**
-
-	a. Make sure OpioidModel file contains the following files:
-		opioidmodelmain.py
-		opioidmodelmainnew.R
-    		opioidmodule.py
-		properly formatted csv file
-		
-	b. Make sure that both opioidmodel.txt and the OpioidModel folder 
-	   are in your main   directory (i.e. ~/user/) OR change the output/input directories directly in both the scripts
-     for R and python
-   
-	c. From your Terminal, run ./opioidmodel.txt
+a. Make sure OpioidModel file contains the following files:
+	opioidmodelmain.py
+	opioidmodelmainnew.R
+	opioidmodule.py
+	properly formatted csv file  
+b. Make sure that both opioidmodel.txt and the OpioidModel folder 
+   are in your main   directory (i.e. ~/user/) OR change the output/input directories directly in both the scripts
+for R and python  
+c. From your Terminal, run ./opioidmodel.txt
 	
 
-	NOTE: For a properly formatted csv file, please refer to the
-	      inputformat csv file in OpioidModel.
+**NOTE:** For a properly formatted csv file, please refer to the
+      inputformat csv file in OpioidModel.
 	
 
 ### 2. **OUTPUT:**
-	Based on your selections, a OpioidModelResult.pdf will 
-	be created in the OpioidModel folder, containing your
-	desired plot.
+Based on your selections, a OpioidModelResult.pdf will be created in the  OpioidModel folder, containing your desired plot.
 
-### 3. **OPERATION:** 
+### 3. **OPERATION:**  
 The program can perform the following computations and output a plot or/and an csv dataset:  
   a. Prescription opioid overdose attributed to the addicted class per year    
   b. Parameter(1) correlation plot for combinations resulting in OD deaths that were statistically indifferent(2)
