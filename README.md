@@ -29,7 +29,7 @@ by Simon,Roland and Noah
 	be created in the OpioidModel folder, containing your
 	desired plot.
 
-3. OPERATION: The program can perform the following computations and output a plot or/and an csv dataset:
+3. OPERATION: The program can perform the following computations and output a plot or/and an csv dataset:  
   a. Prescription opioid overdose attributed to the addicted class per year  
   b. Parameter* correlation plot for combinations resulting in OD deaths that were statistically indifferent**
      from the true od deaths in 2017  
