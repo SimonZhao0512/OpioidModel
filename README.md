@@ -1,7 +1,7 @@
 # OpioidModel
 Program for modeling the prescription opioid epidemic for given data:  
 **APAM SEM 4903 Columbia University**
-Chen R, Zhao S and Igra I
+Chen R, Igra N and Zhao S
 
 The program is based on equations and calculations used by Battista NA, Pearcy LB, and Strickland WC
 in [Modeling the Prescription Opioid Epidemic (2019)](https://www.ncbi.nlm.nih.gov/pubmed/31012032)
