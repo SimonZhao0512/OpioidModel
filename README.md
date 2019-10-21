@@ -42,7 +42,7 @@ by Simon,Roland and Noah
     ** Results failed to reject a null hypothesis of no difference in a student t-test for a minimum sample of 50 values
      and a significance level of p < 0.1
     *** Best parameters defined as those resulting in the minimal difference from the true od deaths for given year
-    **** This procedure uses sobol and saltelli modules from SALib
+    **** This procedure uses sobol and saltelli modules from [SALib](https://salib.readthedocs.io/en/latest/api.html#sobol-sensitivity-analysis)
 	
 
 For any other questions, please contact Noah @ nmi2106@columbia.edu
