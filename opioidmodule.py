@@ -54,7 +54,7 @@ def addict_death_rate(estaddictod,actualod2015,naturaldeath,poprange):
     return rate
 
 ### The following 6 functions are involved in our ODE solver ###
-
+    
 def pop_assign(listofpop):
     '''Takes a list of population proportions and assigns them to individual 
     variables, returns a tupple'''
@@ -70,40 +70,61 @@ def pop_assign(listofpop):
     
     return mys,myp,mya,myr
 
+
+
 #The following func_s-r are used in the RK4 solver
-def func_s(t,x,s,addict_fromaddict_rate,a,addict_frompres_rate,p,j,rehab_success_rate,r,death_rate,addict_od_death_rate):
+def func_s(t,x,s,p,a,r,addict_fromaddict_rate,addict_frompres_rate,
+           j,rehab_success_rate,death_rate,addict_od_death_rate):
     '''returns RHS of ds/dt'''
-    
+
     return -x*s -addict_fromaddict_rate*s*a -addict_frompres_rate*s*p + j*p + rehab_success_rate*r + death_rate*(p + r) + addict_od_death_rate*a
     
     
-def func_p(t,x,s,j,addict_rate,death_rate,p):
+def func_p(t,x,s,p,j,addict_rate,death_rate):
     '''returns RHS of dp/dt'''
-    
+
     return x*s -(j + addict_rate + death_rate)*p 
     
 
-def func_a(t,addict_rate,p,relapse_rate,r,addict_fromaddict_rate,s,a,addict_frompres_rate,k,addict_od_death_rate):
+def func_a(t,addict_rate,s,p,a,r,relapse_rate,addict_fromaddict_rate,
+           addict_frompres_rate,k,addict_od_death_rate):
     '''returns RHS of da/dt'''
     
     return addict_rate*p + relapse_rate*r + addict_fromaddict_rate*s*a + addict_frompres_rate*s*p -(k + addict_od_death_rate)*a
     
 
 
-def func_r(t,k,a,rehab_success_rate,relapse_rate,death_rate,r):
+def func_r(t,k,a,r,rehab_success_rate,relapse_rate,death_rate):
     '''returns RHS of dr/dt'''
-    
+
     return k*a -(rehab_success_rate + relapse_rate + death_rate)*r
+
+
+def df_dt(t,poplist,x,j,k,addict_rate,addict_fromaddict_rate,
+          addict_frompres_rate,relapse_rate,rehab_success_rate,
+          addict_od_death_rate,death_rate):
+    ''' returns RHS 4x1 matrix of ODE's  f(s), f(p), f(a), f(r)'''
     
+    s,p,a,r = poplist[0], poplist[1], poplist[2],poplist[3]
+    f_s = func_s(t,x,s,p,a,r,addict_fromaddict_rate,addict_frompres_rate,j,
+                 rehab_success_rate,death_rate,addict_od_death_rate)
+    f_p = func_p(t,x,s,p,j,addict_rate,death_rate)
+    f_a = func_a(t,addict_rate,s,p,a,r,relapse_rate,addict_fromaddict_rate,
+                 addict_frompres_rate,k,addict_od_death_rate)
+    f_r = func_r(t,k,a,r,rehab_success_rate,relapse_rate,death_rate)
+    return [f_s,f_p,f_a,f_r]
 
 
-def rk4_odesolver(poplist,listofparameters):
-    '''solves the four ode's for the opioid epidemic for a step size of 1
+def rk4_odesolver(poplist,listofparameters,approach = 'iteration'):
+    '''solves the 4-D ODE for the opioid epidemic for a step size of 1
     using the RK4 method using proportions at some t_n
-    returns a tupple of our proportions at t_n+1'''
+    returns a tupple of our proportions at t_n+1
+    approach options:
+    'iteration' -- solve's the 4 ODE's 1 by 1, keeping 3/4 pop parameters
+    constant
+    'allatonce' -- solves a 4x1 ODE '''
     
     #Local parameter assignement
-    s,p,a,r = tuple(poplist) #my props at t_n
     x = listofparameters[0]
     j = listofparameters[1]
     k = listofparameters[2]
@@ -114,6 +135,7 @@ def rk4_odesolver(poplist,listofparameters):
     rehab_success_rate = listofparameters[7]
     death_rate = listofparameters[8]
     addict_od_death_rate = listofparameters[9]
+
     #Some values for solveivp to be used for all populations
     method = 'RK45'
     atol = 1.e-10
@@ -122,34 +144,57 @@ def rk4_odesolver(poplist,listofparameters):
     t_max = 1
     t_span= np.array([t_min, t_max])
     
-    #Solve ODE's iterably:
-    #1. Set initial condition for IV
-    #2. Solve ODE using related variables, rates, and IC's(!!!)
-    #3. Pull out solution for t = 1 (i.e. t = t_n + 1)
-    for i in range(0,4):
-        if i == 0:#S step
-            s_0 = np.array([s])
-            sol_s = solve_ivp(lambda t,s : func_s(t,x,s,addict_fromaddict_rate,a,addict_frompres_rate,p,j,rehab_success_rate,r,death_rate,addict_od_death_rate), t_span, s_0, method = method, rtol=rtol, atol=atol)  
-            snew = sol_s.y[0,-1]
-        elif i == 1:
-            p_0 = np.array([p])
-            sol_p = solve_ivp(lambda t,p : func_p(t,x,s,j,addict_rate,death_rate,p),t_span, p_0, method = method, rtol=rtol, atol=atol)
-            pnew = sol_p.y[0,-1]
-        elif i == 2:
-            a_0 = np.array([a])
-            sol_a = solve_ivp(lambda t,a : func_a(t,addict_rate,p,relapse_rate,r,addict_fromaddict_rate,s,a,addict_frompres_rate,k,addict_od_death_rate),t_span, a_0, method = method, rtol=rtol, atol=atol)
-            anew = sol_a.y[0,-1]
-        else:
-            r_0 = np.array([r])
-            sol_r = solve_ivp(lambda t,r : func_r(t,k,a,rehab_success_rate,relapse_rate,death_rate,r), t_span, r_0, method = method, rtol=rtol, atol=atol)
-            rnew = sol_r.y[0,-1]
-    
-    #Ensure total = 1       
-    new_pop = [snew,pnew,anew,rnew]
-    sfin,pfin,afin,rfin = pop_assign(new_pop)
+    if approach == 'iteration':
+        s,p,a,r = tuple(poplist) #my props at t_n
+
+        #Solve ODE's iteratively:
+        #1. Set initial condition for IV
+        #2. Solve ODE using related variables, rates, and IC's(!!!)
+        #3. Pull out solution for t = 1 (i.e. t = t_n + 1)
+        for i in range(0,4):
+            if i == 0:#S step
+                s_0 = np.array([s])
+                sol_s = solve_ivp(lambda t,s : func_s(t,x,s,p,a,r,addict_fromaddict_rate,addict_frompres_rate,
+                                                      j,rehab_success_rate,death_rate,addict_od_death_rate),
+                                    t_span, s_0, method = method, rtol=rtol, atol=atol)  
+                sfin = sol_s.y[0,-1]
+            elif i == 1:
+                p_0 = np.array([p])
+                sol_p = solve_ivp(lambda t,p : func_p(t,x,s,p,j,addict_rate,death_rate),
+                                  t_span, p_0, method = method, rtol=rtol, atol=atol)
+                pfin = sol_p.y[0,-1]
+            elif i == 2:
+                a_0 = np.array([a])
+                sol_a = solve_ivp(lambda t,a : func_a(t,addict_rate,s,p,a,r,relapse_rate,addict_fromaddict_rate,
+                                                      addict_frompres_rate,k,addict_od_death_rate),
+                                    t_span, a_0, method = method, rtol=rtol, atol=atol)
+                afin = sol_a.y[0,-1]
+            else:
+                r_0 = np.array([r])
+                sol_r = solve_ivp(lambda t,r : func_r(t,k,a,r,rehab_success_rate,relapse_rate,death_rate),
+                                  t_span, r_0, method = method, rtol=rtol, atol=atol)
+                rfin = sol_r.y[0,-1]
+                
+        sfin,pfin,afin,rfin = pop_assign([sfin,pfin,afin,rfin])
+                
+        return sfin,pfin,afin,rfin
+            
+    else:
+        pop_n_1 = solve_ivp(lambda t,poplist : 
+            df_dt(t,poplist,x,j,k,addict_rate,addict_fromaddict_rate,
+                  addict_frompres_rate,relapse_rate,rehab_success_rate,
+                  addict_od_death_rate,death_rate),
+           t_span,np.array(poplist),
+           method = method, rtol=rtol, atol=atol,vectorized = False)
+            
+        values_n_1 = pop_n_1.y[:,-1]
+        sfin,pfin,afin,rfin = values_n_1[0], values_n_1[1], values_n_1[2], values_n_1[3]
         
-    return sfin,pfin,afin,rfin
-        
+        sfin,pfin,afin,rfin = pop_assign([sfin,pfin,afin,rfin])
+
+        return sfin,pfin,afin,rfin
+            
+      
 
 def find_cutoff(resultsinstance,realmean,cutoffyear):#Used for 2
     '''Based on model output, choosing best neighborhood around the result
@@ -205,7 +250,47 @@ def find_cutoff(resultsinstance,realmean,cutoffyear):#Used for 2
             t = t + 1
             cutoff = cutoffrange[t]
             
-    return good_cutoff
+    #Following are for unequal sample anova
+    partial_ss_wit = (samplesize - 1) * (samplesd**2)
+    partial_ss_bw = samplesize * samplemean
+    partial_ss_bw_sqr = partial_ss_bw*samplemean
+            
+    return good_cutoff,partial_ss_wit,partial_ss_bw,partial_ss_bw_sqr
+
+
+def anova(sample,groups,ss_wit_list,ss_bw_list,ss_bw_sqr_list):
+    '''Calculates F stat and both values of DOF for give sample, subgroup SD's
+    and total number of groups'''
+    
+    sample_size = len(sample)
+    
+    sum_ss_wit = 0
+    for partial_ss_wit in ss_wit_list:
+        sum_ss_wit = sum_ss_wit + partial_ss_wit
+    
+    dof_wit = sample_size - groups
+    s_wit_sqr = sum_ss_wit / dof_wit
+    
+    sum_ss_bw = 0
+    for partial_ss_bw in ss_bw_list:
+        sum_ss_bw = sum_ss_bw + partial_ss_bw
+        
+    sum_ss_bw_sqr = 0
+    for partial_ss_bw_sqr in ss_bw_sqr_list:
+        sum_ss_bw_sqr = sum_ss_bw_sqr + partial_ss_bw_sqr
+        
+    ss_bw = sum_ss_bw_sqr - ((sum_ss_bw**2) / sample_size)
+    
+    dof_bw = groups - 1
+    s_bet_sqr = ss_bw / dof_bw
+    
+    
+    f_stat = s_bet_sqr / s_wit_sqr
+    
+    
+    return f_stat,dof_bw,dof_wit
+    
+    
 
 
 def colmean(mylist,interestcol):#Used for option 3
@@ -250,6 +335,7 @@ def find_next_value(mylist,interestcol):#Used for option 3
     next_val = intercept + slope*7
     
     return next_val
+
 
 #This function is the RK4 solver method applied in main() using numpy arrays
 #as the input and output
