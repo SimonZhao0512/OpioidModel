@@ -1,0 +1,49 @@
+November 12th, 2019
+
+Updates:
+
+1. Data:
+	a. Added inputnys.csv with relevant data for New York State excluding NYC
+
+	b. Added inputnyssense.csv and inputnycsense.csv: both contain overall stats (i.e. populations, natural death rate) relevant for the State of New York, but each has specific parameters used for the different subgroups. Also added a relative treatment entry coefficient to enforce more heterogeneity between the groups.
+	
+	To compare NYS\NYC and NYC parameter sensitivities, we will run both sets on the same 	initial conditions (NYS).
+
+	c. Replaced the .csv files to represent the results using the most recent update. 
+
+	d.Some overall adjustments in coefficient/parameter choice:
+		i. Prescription rate: average of rates 2010-2017
+		ii. Actual OD deaths: represent unintentional overdoses attributed to prescription 		opioids. For missing values (only NYS/NYC 2014,2015), the mean was used.
+		iii. Initial proportions of prescribed users for NYS was found using a linear regression of total prescribed users in NYS\NYC for 2017-2012 such that R^2 = 0.975. The initial proportion for the state was found using the weighted averaged of the other two.
+		iv. relative treatment coefficient should be 1, only comes up in the sensitivity analysis.
+
+2. Module update:
+	a. df_dt: Added a function which combines the four ODE’s (func_s,func_p,func_a,func_r) into a 	four element list. Accepts all parameters and population and returns list of rates.
+	
+	b. rk4_odesolver: Added ‘approach’ argument with ‘iteration as the default.
+		iteration: Will solve as originally designed.
+		allatonce: Will solve the ODE’s using df_dt and a list of the populations [s,p,a,r].
+	    Returns a 4x1 tupple of population proportions.
+
+	c. anova: For the parameter correlation plots, will evaluate test of no difference between 	subgroups (defined by prescription rates and already selected for an acceptable neighborhood 	around the actual overdose rate for 2017). This is a final measure to confirm that there is no statistical significance between any of the subgroups simulated deaths and the actual deaths for 2017 at a significance level of p = 0.1
+
+	d. find_cutoff: Now outputs sum of squares within subgroup and the relevant part of the sum of 	squares between subgroups and its squared value with the cutoff value. These three are used 	in the ANOVA (function mentioned above (C) ).
+
+
+3. Main update:
+	a. Probably played around with the range of variables used in all functionality that is not the 	numerical sensitivity analysis.
+	
+	b. Definitely changed the intervals used in the numerical sensitivity analysis:
+		addict_od_death_rate and death_rate are specific parameters, and their intervals
+		vary between [(given_value*3)/10, given_value*3]. This was how those intervals were chosen in Battista (2019).
+		treatment_entry varies on same interval [0.2,2]*given_value
+
+	c. Correlation plot: As mentioned in 2.c-d, evaluated difference across all groups using an ANOVA at a significance level of p = 0.1. Additionally, added to its output the number of people entering treatment for 2017 (treatment_rate*population(2016)*A(2016)). Recently found 	OASAS data for these numbers at the sub-state level and am interested in incorporating that into future updates.
+
+	d.Numerical sensitivity: If user requests only the dataset, will add rows of order ‘3’ and ‘4’ for 	the confidence intervals of the sensitivities for each population, to be analyzed separately.
+
+	e. Output: For the parameter plot, will also print out both the F-stat and the numerator and denominator Degrees of Freedom, to be manually read off of a table to evaluate null hypothesis of no difference across groups.
+
+
+4. sensitivitycomparison.R: Accepts outputs of ‘numerical sensitivity dataset only’ option, renamed ‘nyssense.csv’ and ’nycsense.csv.’ Performs a paired proportion test on each pair of parameters for the same population (s,p,a,r) and order (first or total), and then evaluates the null hypothesis of no difference between sensitivities for s, p, a or r (total of four hypothesis) using the Holm-Sidak correction for multiple comparisons. Outputs results as a .csv on the user’sdesktop.
+
