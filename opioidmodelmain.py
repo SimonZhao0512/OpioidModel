@@ -52,8 +52,8 @@ def main():
         if whattodo !=4:#For all that isn't numerical sensitivity
             if whattodo == 1:
                 pres_rate = [param_dict['pres_rate']]#Prescription rate
-                no_addict_rate = [1.0,1.5,2.0,2.5,3,3.5,4,4.5]#Rate of ending prescription without addiction
-                treat_entry_rate = op.stepint(0.001,1,200) + [1]#Treatment entry rate
+                no_addict_rate = [0.5,1.0,1.5,2.0,2.5,3,3.5]#Rate of ending prescription without addiction
+                treat_entry_rate = op.stepint(0.001,1,300) + [1]#Treatment entry rate
             elif whattodo == 2:
                 pres_rate = op.stepint(param_dict['pres_rate']-0.1,param_dict['pres_rate']+0.05,4) 
                 no_addict_rate = op.stepint(0.08,8,100)
@@ -71,16 +71,7 @@ def main():
             relapse_rate = param_dict['relapse_rate']#Rate of relapse
             rehab_success_rate = param_dict['rehab_success_rate']#Rate of completing treatment successfully 
 
-        else:#Parameter choice for numerical sensitivity
-            parameter_names = ['pres_rate', 'no_addict_rate', 'addict_frompres_rate','addict_fromaddict_rate','addict_rate','treat_entry_rate',
-                  'rehab_success_rate','relapse_rate','death_rate','addict_od_death_rate']
             
-            parameter_ranges = {'num_vars':10,'names': parameter_names,
-                                'bounds':[[0.035,0.35],[0.8,8],[0.0001,0.01],
-                                          [0.0001,0.01],[0.00235,0.0235],[0.2,2]
-                                          ,[0,1],[0,1],[0.0023,0.023],[0.00365,0.0365]]}
-        
-        
         #Values to be used by all/ needed to evaluate initial conditions    
         death_rate = param_dict['natural_death_rate']#Natural death rate
         actual_od_death_2015 = param_dict['actual_od_death_2015']#Rate of actual overdose in 2015
@@ -88,6 +79,17 @@ def main():
         #Death rate attributed to the addicted class
         addict_od_death_rate = op.addict_death_rate(est_addict_od,actual_od_death_2015,
                                                      death_rate,pop_2010_2017)
+        
+        if whattodo == 4:#Parameter choice for numerical sensitivity
+            parameter_names = ['pres_rate', 'no_addict_rate', 'addict_frompres_rate','addict_fromaddict_rate','addict_rate','treat_entry_rate',
+                  'rehab_success_rate','relapse_rate','death_rate','addict_od_death_rate']
+            
+            parameter_ranges = {'num_vars':10,'names': parameter_names,
+                                'bounds':[[(param_dict['pres_rate']+0.1)/10,param_dict['pres_rate']+0.1],[0.08,8],[0.0001,0.01],
+                                          [0.0001,0.01],[0.00235,0.0235],[0.2*param_dict['relative_treat'],2*param_dict['relative_treat']],[0,1],[0,1],
+                                          [(death_rate*3)/10,death_rate*3],
+                                          [(addict_od_death_rate*3)/10,addict_od_death_rate*3]]}
+                        
         
         t_0 = 2010
         span = 8 #end at 2017
@@ -200,7 +202,8 @@ def main():
                                   yearlyresults[j][6],yearlyresults[j][7])
 
                         #So user doesn't lose their mind, given them yearly results
-                        print('\n{} - {:.2f}, {:.2f}, {:.2f}\n'.format(i,yearlyresults[j][1],yearlyresults[j][2],yearlyresults[j][3]))
+                        print('\n{} - {:.2f}, {:.2f}, {:.2f}\n'.format(i,yearlyresults[j][1],
+                              yearlyresults[j][2],yearlyresults[j][3]))
 
                     step = step + 1    
                     progress_report(step,step_total,20)    
@@ -233,9 +236,18 @@ def main():
                     value = ['r']
                 
                 first_order_row = value + ['1'] + s1_list 
-                total_order_row = value + ['2'] + st_list 
+                total_order_row = value + ['2'] + st_list
+
                 sense_results.append(first_order_row)#Row of 1 sensitivities for give pop
                 sense_results.append(total_order_row)#Row of T sensitivities for given pop
+                
+                if whattoprint != 1 and whattoprint != 3:#for statistical comparisons
+                    s1_conf_list = list(pop_sense['S1_conf'])
+                    st_conf_list = list(pop_sense['ST_conf'])
+                    first_order_conf_row = value + ['3'] + s1_conf_list
+                    total_order_conf_row = value + ['4'] + st_conf_list
+                    sense_results.append(first_order_conf_row)
+                    sense_results.append(total_order_conf_row)
                 
                 step = step + 1
                 progress_report(step,4,4)
@@ -260,9 +272,13 @@ def main():
             od_dif = abs(od_death - addict_od_list[6])#Difference from 2017
             bestresults.append([2017,x_2017,j_2017,k_2017,s_1,p_1,a_1,r_1,od_death,od_dif])
         
-        if whattodo == 2:
+        if whattodo == 2:#correlation plot
             
             close_od = []
+            all_ss_wit = []
+            all_ss_bw = []
+            all_ss_bw_sqr = []
+            group_count = 0
             for value in pres_rate:
                 #current_len = len(close_od)
                 results_by_rate = []
@@ -272,13 +288,21 @@ def main():
                         step = step + 1
                         progress_report(step,step_total,10)
                 #Find statistically significant cutoff                
-                cutoff = op.find_cutoff(results_by_rate,opioid_od_2017,2017)
+                cutoff,ss_wit,ss_bw,ss_bw_sqr = op.find_cutoff(results_by_rate,opioid_od_2017,2017)
                 print('\nCutting off results for prescription rate {:.2f}'.format(value))
                 print('@ Difference < {:.2f}'.format(cutoff))
                 for i in range(0,len(results_by_rate)):
                     if (results_by_rate[i][9] != 'NA') and (results_by_rate[i][9] <= cutoff) and results_by_rate[i][0] == 2017:
+                        #November 11: adding the addicted class proportion for 2016
+                        if results_by_rate[i-1][0] == 2016:
+                            a_2016 = results_by_rate[i-1][6]
+                            people_entered = a_2016 * results_by_rate[i][3] * pop_2010_2017[6]
+                            results_by_rate[i].append(people_entered)
                         close_od.append(results_by_rate[i])
-                    
+                all_ss_wit.append(ss_wit)
+                all_ss_bw.append(ss_bw)
+                all_ss_bw_sqr.append(ss_bw_sqr)
+                group_count = group_count + 1
             
         ### OUTPUT ###
         
@@ -293,7 +317,11 @@ def main():
                 csv_output(results,'modeldataset',1,addict_od_list)
                 print('\ncreated modeldataset.csv with {} rows'.format(len(results)))
         elif whattodo == 2:
-            #Output only 2017 results within desireed neighborhood   
+            #Output only 2017 results within desireed neighborhood
+            #Perform ANOVA on list within neighborhood
+            fstat,dfbw,dfwit = op.anova(close_od,group_count,all_ss_wit,all_ss_bw,all_ss_bw_sqr)
+            print('\nANOVA:')
+            print('F = {:.2f} for DOF num = {} and DOF dem = {}'.format(fstat,dfbw,dfwit))
             if whattoprint == 1 or whattoprint == 3:
                 csv_output(close_od,'modeloutput',2,addict_od_list)
                 print('\ncreated modeloutput.csv with {} rows'.format(len(close_od)))

@@ -20,7 +20,11 @@ model_type <- modelresults[1,1]
 actual_addict_death <- as.vector(modelresults[1,4:10])
 model_output <- modelresults[-1,]
 if (model_type != 4){
+  if(model_type == 2){
+    colnames(model_output) <- c("Year","S->P","P->S", "A->R", "S", "P", "A", "R", "Opioid OD Deaths", "Abs Diff",'Treatment Entry')
+  }else{
   colnames(model_output) <- c("Year","S->P","P->S", "A->R", "S", "P", "A", "R", "Opioid OD Deaths", "Abs Diff")
+  }
 }else{
   colnames(model_output) <- c('POP','TYPE','pres_rate', 'no_addict_rate', 'addict_frompres_rate','addict_fromaddict_rate','addict_rate','treat_entry_rate',
                              'rehab_success_rate','relapse_rate','death_rate','addict_od_death_rate')
@@ -80,6 +84,7 @@ if (model_type != 4){
      plot <- plot + labs(caption = parameter_plot) + theme(plot.caption = element_text(hjust = 0))
      plot
    } else{
+     #option 4
      allorder <- model_output
      allorder$POP <- as.character(allorder$POP)
      allorder$TYPE <- as.character(allorder$TYPE)
@@ -89,7 +94,7 @@ if (model_type != 4){
      parameter_vector <- vector()
      value_vector <- vector()
      for (i in 1:nrow(allorder)){
-     for (j in 3:10){
+     for (j in 3:12){
        pop_vector <- c(pop_vector,allorder[i,1])
        order_vector <- c(order_vector,allorder[i,2])
        parameter_vector <- c(parameter_vector,colnames(allorder[j]))
