@@ -1,5 +1,5 @@
 ﻿name,0
-pres_rate,0.259
+pres_rate,0.289
 addict_rate,0.00744
 addict_fromaddict_rate,0.00094
 addict_frompres_rate,0.00266
@@ -25,3 +25,4 @@ opioid_od_2017,214
 actual_od_death_2015,0.000042
 presopioid_death_rate_2010,0.000036
 p_0,0.0387
+relative_treat,1
