@@ -1,6 +1,5 @@
 cd OpioidModel
-python opioidmodelmain.py
-Rscript opioidmodelmainnew.R
+python main.py
+Rscript opioidmodelvis.R
 mv Rplots.pdf OpioidModelResult.pdf
-rm modeloutput.csv
 open OpioidModelResult.pdf
